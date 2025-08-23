@@ -3,9 +3,14 @@ import folium
 
 enc = "cp932"
 
-with open("data.csv", encoding=enc) as f:
-    lines = f.readlines()
-
+try:
+    with open("data/c.csv", encoding="utf-8-sig") as f:
+        lines = f.readlines()
+    print("Decoded with utf-8-sig")
+except UnicodeDecodeError:
+    with open("data/c.csv", encoding="cp932", errors="replace") as f:
+        lines = f.readlines()
+    print("Decoded with cp932 (with replacements)")
 print(f"Decoded with {enc}")
 
 lines = [x.strip() for x in lines]
@@ -72,6 +77,11 @@ for p in parks:
 
 map_html = m._repr_html_()
 
+# Inject map reference for sidebar functionality
+map_html = map_html.replace('</script>', '''
+    // Expose map object for sidebar clicks
+    window.leafletMapObj = eval(Object.keys(window).find(k => k.startsWith('map_') && window[k] && window[k].setView));
+</script>''')
 
 app = Flask(__name__)
 
