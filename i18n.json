@@ -1,0 +1,66 @@
+{
+  "ja": {
+    "pageTitle": "Tokyo Parks Map | 都立公園マップ",
+    "headerTitle": "Tokyo Parks Map | 都立公園マップ",
+    "subtitle": "東京の公園を検索・発見できるインタラクティブマップ",
+    "searchHeading": "公園を検索",
+    "searchPlaceholder": "公園名で検索...",
+    "categoriesLabel": "カテゴリー",
+    "useLocationLabel": "現在地",
+  "distanceFilterLabel": "距離フィルタ",
+  "distanceAll": "すべて",
+    "photoLoading": "写真を読み込み中...",
+    "photoNone": "近くの写真が見つかりません",
+    "selectAll_allSelected": "全解除",
+    "selectAll_noneSelected": "全選択",
+    "selectAll_partial": "一部",
+    "legendTitle": "カテゴリー",
+    "aboutHeading": "このサイトについて",
+    "aboutParagraph1": "Tokyo Parks Map は東京都内の公園オープンデータを活用し、公園の場所や情報を探しやすくしたウェブアプリです。名前で検索したり、地図上で位置を確認したり、基本的な詳細を見ることができます。",
+    "bullet1": "日本語の名称で公園を検索",
+    "bullet2": "公園をクリックするとその位置へズーム",
+    "bullet3": "住所やリンク（あれば）を確認",
+    "bullet4": "東京都オープンデータを利用",
+    "bullet5": "Python / Flask / Leaflet.js で構築",
+    "footer": "© 2025 Tokyo Parks Map | オープンデータハッカソン"
+  ,"sortNameLabel": "A-Z"
+  ,"sortDistanceLabel": "距離"
+  ,"linkLabel": "リンク"
+  ,"directionsLabel": "行き方"
+  ,"distanceUnitMeters": "m"
+  ,"distanceUnitKilometers": "km"
+  ,"popupDistanceSeparator": ""
+  },
+  "en": {
+    "pageTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
+    "headerTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
+    "subtitle": "Discover, search, and explore Tokyo's public parks on an interactive map.",
+    "searchHeading": "Search Parks",
+    "searchPlaceholder": "Search by park name...",
+    "categoriesLabel": "Categories",
+    "useLocationLabel": "Location",
+  "distanceFilterLabel": "Distance Filter",
+  "distanceAll": "All",
+    "photoLoading": "Loading photo...",
+    "photoNone": "No nearby photo",
+    "selectAll_allSelected": "Deselect All",
+    "selectAll_noneSelected": "Select All",
+    "selectAll_partial": "Some",
+    "legendTitle": "Categories",
+    "aboutHeading": "About This Website",
+    "aboutParagraph1": "Tokyo Parks Map is an open data web application that helps you discover and explore public parks across Tokyo. The interactive map lets you search by name, zoom to locations, and view basic details. Built for the Open Data Hackathon to promote civic use of public datasets.",
+    "bullet1": "Search parks by name (Japanese)",
+    "bullet2": "Click a park to zoom to its location",
+    "bullet3": "View addresses, links (where available)",
+    "bullet4": "Data sourced from Tokyo open government datasets",
+    "bullet5": "Built with Python, Flask & Leaflet.js",
+    "footer": "© 2025 Tokyo Parks Map | Open Data Hackathon"
+  ,"sortNameLabel": "A-Z"
+  ,"sortDistanceLabel": "Distance"
+  ,"linkLabel": "Link"
+  ,"directionsLabel": "Directions"
+  ,"distanceUnitMeters": "m"
+  ,"distanceUnitKilometers": "km"
+  ,"popupDistanceSeparator": ""
+  }
+}

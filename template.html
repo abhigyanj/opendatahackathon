@@ -184,9 +184,15 @@
       <input id="q" placeholder="公園名で検索..." data-i18n-placeholder="searchPlaceholder">
       <div id="locControls" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <button id="locBtn" type="button" class="tiny-btn" style="display:inline-flex;align-items:center;gap:4px;">📍 <span data-i18n="useLocationLabel">現在地</span></button>
-        <button id="sortNameBtn" type="button" class="tiny-btn active" data-sort="name">A-Z</button>
-        <button id="sortDistBtn" type="button" class="tiny-btn" data-sort="distance">距離</button>
+        <button id="sortNameBtn" type="button" class="tiny-btn active" data-sort="name" data-i18n="sortNameLabel">A-Z</button>
+        <button id="sortDistBtn" type="button" class="tiny-btn" data-sort="distance" data-i18n="sortDistanceLabel">距離</button>
         <span id="locStatus" class="muted" style="flex:1; font-size:11px;"></span>
+      </div>
+      <!-- Distance Filter Added -->
+      <div id="distanceFilter" style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+        <label for="distRange" style="font-size:11px;color:#555;white-space:nowrap;" data-i18n="distanceFilterLabel">距離フィルタ</label>
+        <input id="distRange" type="range" min="0" max="20000" step="500" value="0" style="flex:1;">
+        <span id="distValue" style="font-size:11px;color:#333;min-width:52px;text-align:right;" data-i18n="distanceAll">すべて</span>
       </div>
       <div class="section-label">
         <h3><span data-i18n="categoriesLabel">カテゴリー</span> <small id="catCount" class="muted"></small></h3>
@@ -216,6 +222,14 @@
   </div>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- MarkerCluster plugin -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <style>
+    /* Icon marker styling */
+    .park-icon{width:24px;height:24px;border-radius:50%;background:var(--icon-bg,#2a81cb);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;box-shadow:0 0 0 1px #222,0 1px 3px #0004;}
+  </style>
   <script>
     // Bootstrapped data placeholder; replaced server-side.
   const {parks, centerLat, centerLon, categoryColors} = JSON.parse(decodeURIComponent('BOOTSTRAP_JSON_PLACEHOLDER'));
@@ -225,6 +239,8 @@
   let locationMarker = null;
   let locationAccuracyCircle = null;
   let sortMode = 'name';
+  // Added distance filter state
+  let maxDistance = 0; // meters (0 = unlimited)
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
     const catBox = document.getElementById('catBox');
@@ -302,21 +318,51 @@
       })
     };
     L.control.layers(baseLayers, null, {position:'topright'}).addTo(leafletMap);
-    const markerGroup = L.layerGroup().addTo(leafletMap);
-  const markers = []; // {marker, parkIdx, cat}
-    function addMarkers(){
+    // --- Marker clustering & icon markers ---
+    const clusterGroup = L.markerClusterGroup({ disableClusteringAtZoom:16, spiderfyOnMaxZoom:true, maxClusterRadius:50 });
+    leafletMap.addLayer(clusterGroup);
+    const markers = []; // {marker, parkIdx, cat}
+    function pickIcon(category){
+      if(!category) return '🌳';
+      const lc = category.toLowerCase(); // Japanese unaffected
+      // Specific Japanese / category mappings
+      if(/ごみ|ゴミ|廃棄|水道|給水/.test(lc)) return '🚮';              // ごみ・水道施設
+      if(/その他/.test(lc)) return '他';                                  // その他
+      if(/コミュニティ|ｺﾐｭﾆﾃｨ|community/.test(lc)) return '⛪️';         // コミュニティセンター
+      if(/スポーツ|体育|sport|gym/.test(lc)) return '⚾️';                // スポーツ・体育館
+      if(/交通|駅|station|rail|train/.test(lc)) return '🚉';             // 交通・駅
+      if(/保育|幼稚園|託児|nursery|kindergarten/.test(lc)) return '🧸';  // 保育・幼稚園
+      if(/公園|park/.test(lc)) return '🛝';                              // 公園
+      if(/図書|ライブラリ|library/.test(lc)) return '📚';                // 図書館
+      if(/学校|教育|school|college|university/.test(lc)) return '🏫';    // 学校・教育施設
+      if(/市役所|役場|区役所|government|city hall/.test(lc)) return '🏛️'; // 市役所・役場
+      if(/文化|博物|museum|art|gallery/.test(lc)) return '🖼️';          // 文化・博物館
+      if(/病院|医療|hospital|clinic|medical/.test(lc)) return '🏥';      // 病院・医療
+      if(/福祉|welfare/.test(lc)) return '🤝🏻';                           // 福祉施設
+      if(/高齢|老人|senior|elder/.test(lc)) return '👵🏻';                 // 高齢者施設
+      return '他';
+    }
+    function buildAllMarkers(){
       parks.forEach(p=>{
         const color = (categoryColors && categoryColors[p.category]) ? categoryColors[p.category] : '#2a81cb';
-        const m = L.circleMarker([p.lat, p.lon], {radius:6,color:'#222',weight:1,fillColor:color,fillOpacity:0.85}).addTo(markerGroup);
+        const iconHtml = `<div class=\"park-icon\" style=\"--icon-bg:${color}\">${pickIcon(p.category||'')}</div>`;
+        const icon = L.divIcon({className:'', html:iconHtml, iconSize:[24,24], iconAnchor:[12,12], popupAnchor:[0,-12]});
+        const m = L.marker([p.lat, p.lon], {icon});
         let popup = `<b>${p.name}</b><br>${p.address||''}`;
         if(p.category) popup += `<br><span style=\"display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin-top:4px;\">${p.category}</span>`;
-        if(p.url) popup += `<br><a href='${p.url}' target='_blank'>Link</a>`;
+        if(p.url) popup += `<br><a href='${p.url}' target='_blank'>${tr('linkLabel')}</a>`;
         if(p.desc) popup += `<br><small>${p.desc.slice(0,180)}...</small>`;
         m.bindPopup(popup);
-  markers.push({marker:m, parkIdx:p._idx, cat:p.category});
+        markers.push({marker:m, parkIdx:p._idx, cat:p.category});
       });
     }
-    addMarkers();
+    function populateCluster(list){
+      clusterGroup.clearLayers();
+      const allowed = new Set(list.map(p=>p._idx));
+      markers.forEach(obj=>{ if(allowed.has(obj.parkIdx)) clusterGroup.addLayer(obj.marker); });
+    }
+    buildAllMarkers();
+    populateCluster(parks);
 
     function focusPark(p){
   leafletMap.flyTo([p.lat, p.lon], 15, {animate:true, duration:0.75});
@@ -365,6 +411,10 @@
         filtered = filtered.filter(p=> set.has(p.category));
       }
       if(text) filtered = filtered.filter(p=> p.name.includes(text));
+      // Distance filtering (only if userLocation known and maxDistance > 0)
+      if(maxDistance>0 && userLocation){
+        filtered = filtered.filter(p=> typeof p.dist==='number' && p.dist <= maxDistance);
+      }
       if(sortMode==='distance' && userLocation){
         filtered = [...filtered].sort((a,b)=>{
           if(typeof a.dist !== 'number') return 1;
@@ -375,9 +425,9 @@
         filtered = [...filtered].sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
       }
       render(filtered);
-      updateMarkerVisibility(filtered);
-  updateCatCount();
-  updateSelectAllButton();
+      populateCluster(filtered);
+      updateCatCount();
+      updateSelectAllButton();
     }
     qEl.oninput = applyFilters;
 
@@ -395,13 +445,8 @@
     }
     // Marker visibility filtering
     function updateMarkerVisibility(visibleList){
-      const allowed = new Set(visibleList.map(p=>p._idx));
-      markers.forEach(({marker, parkIdx})=>{
-        const el = marker.getElement();
-        if(!el) return;
-        el.style.display = allowed.has(parkIdx)?'':'none';
-      });
-    }
+      // No-op: clustering rebuild handles visibility
+     }
 
     // Inject dynamic CSS vars for category colors based on first matching marker icon color class
     function deriveCategoryColors(){
@@ -435,13 +480,19 @@
     }
 
   function syncMarkerColors(){
-    // Align marker fillColor with CSS vars (in case palette changes)
+    // Align marker icon background with CSS vars (in case palette changes)
     const rootStyles = getComputedStyle(document.documentElement);
     markers.forEach(obj=>{
       if(!obj.cat) return;
       const varName = `--cat-${cssSafe(obj.cat)}`;
       const col = rootStyles.getPropertyValue(varName).trim();
-      if(col) obj.marker.setStyle({fillColor: col});
+      if(col){
+        const el = obj.marker.getElement();
+        if(el){
+          const div = el.querySelector('.park-icon');
+          if(div) div.style.setProperty('--icon-bg', col);
+        }
+      }
     });
   }
   function initAfterMap(){ setupEnhancements(); deriveCategoryColors(); syncMarkerColors(); applyFilters(); }
@@ -484,16 +535,29 @@
   function applyTranslations(){
     document.documentElement.lang = currentLang;
     document.querySelectorAll('[data-i18n]').forEach(el=>{
-      const k = el.getAttribute('data-i18n');
-      const txt = tr(k);
-      if(txt) el.textContent = txt;
+       const k = el.getAttribute('data-i18n');
+       const txt = tr(k);
+       if(txt) el.textContent = txt;
+     });
+     // Reset distance value label when unlimited (after translation swap)
+     if(maxDistance===0){
+       const dv=document.getElementById('distValue');
+       if(dv) dv.textContent = tr('distanceAll');
+     }
+    // Update dynamic popup texts (re-opened later) & distance slider units label if needed
+    updatePopupsWithDirections();
+    const unitM = tr('distanceUnitMeters');
+    const unitKm = tr('distanceUnitKilometers');
+    document.querySelectorAll('#distValue').forEach(el=>{
+      if(maxDistance===0) el.textContent = tr('distanceAll');
+      else if(maxDistance < 1000) el.textContent = maxDistance + ' ' + unitM;
+      else el.textContent = (maxDistance/1000).toFixed(maxDistance%1000===0?0:1) + ' ' + unitKm;
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
       const k = el.getAttribute('data-i18n-placeholder');
       const txt = tr(k);
       if(txt) el.setAttribute('placeholder', txt);
     });
-    // dynamic select-all is recalculated by updateSelectAllButton()
     updateSelectAllButton();
   }
   function setupLangButtons(){
@@ -511,6 +575,8 @@
         document.querySelectorAll('.map-wrap > div').forEach(div=>{ if(div.innerHTML && div.innerHTML.includes('var(--cat-')){ div.remove(); }});
         buildLegend(categoryColors);
         applyTranslations();
+        // Rebuild popups with translated labels
+        rebuildAllPopups();
       };
     });
   }
@@ -541,10 +607,12 @@
     });
   }
   function formatDistance(m){
-    if(m < 1000) return `${Math.round(m)} m`;
+    const unitM = tr('distanceUnitMeters');
+    const unitKm = tr('distanceUnitKilometers');
+    if(m < 1000) return `${Math.round(m)} ${unitM}`;
     const km = m/1000;
-    if(km < 10) return `${km.toFixed(2)} km`;
-    return `${km.toFixed(1)} km`;
+    if(km < 10) return `${km.toFixed(2)} ${unitKm}`;
+    return `${km.toFixed(1)} ${unitKm}`;
   }
   function requestLocation(force){
     if(userLocation && !force){
@@ -580,23 +648,45 @@
       locationAccuracyCircle = L.circle([userLocation.lat, userLocation.lon], {radius: userLocation.accuracy||30, color:'#136aec', fillColor:'#136aec', fillOpacity:0.15, weight:1}).addTo(leafletMap);
     }
   }
-  function updatePopupsWithDirections(){
-    if(!userLocation) return;
+  function rebuildAllPopups(){
     markers.forEach(({marker, parkIdx})=>{
       const p = parks.find(pp=>pp._idx===parkIdx);
       if(!p) return;
       let popup = `<b>${p.name}</b><br>${p.address||''}`;
       if(p.category) popup += `<br><span style=\"display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin-top:4px;\">${p.category}</span>`;
-      if(p.url) popup += `<br><a href='${p.url}' target='_blank'>Link</a>`;
-      if(typeof p.dist==='number') popup += `<br><small>${formatDistance(p.dist)}</small>`;
-      const gmaps = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lon}/${p.lat},${p.lon}`;
-      popup += `<br><a href='${gmaps}' target='_blank'>Directions</a>`;
+      if(p.url) popup += `<br><a href='${p.url}' target='_blank'>${tr('linkLabel')}</a>`;
+      if(userLocation && typeof p.dist==='number') popup += `<br><small>${formatDistance(p.dist)}</small>`;
+      if(userLocation){
+        const gmaps = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lon}/${p.lat},${p.lon}`;
+        popup += `<br><a href='${gmaps}' target='_blank'>${tr('directionsLabel')}</a>`;
+      }
       marker.bindPopup(popup);
     });
+  }
+  function updatePopupsWithDirections(){
+    if(!userLocation) return;
+    rebuildAllPopups();
   }
   document.getElementById('locBtn').addEventListener('click', ()=>{ requestLocation(); });
   document.getElementById('sortNameBtn').addEventListener('click', ()=>{ sortMode='name'; toggleSortButtons(); applyFilters(); });
   document.getElementById('sortDistBtn').addEventListener('click', ()=>{ sortMode='distance'; if(!userLocation) requestLocation(); else { updateDistances(); } toggleSortButtons(); applyFilters(); });
+  // Distance range events
+  const distRange = document.getElementById('distRange');
+  const distValue = document.getElementById('distValue');
+  if(distRange){
+    distRange.addEventListener('input', ()=>{
+      const v = parseInt(distRange.value,10);
+      maxDistance = v;
+      if(v===0){
+        distValue.textContent = tr('distanceAll');
+      } else if(v < 1000){
+        distValue.textContent = v + ' m';
+      } else {
+        distValue.textContent = (v/1000).toFixed(v%1000===0?0:1) + ' km';
+      }
+      if(!userLocation && v>0){ requestLocation(); } else { applyFilters(); }
+    });
+  }
   function toggleSortButtons(){
     document.querySelectorAll('#sortNameBtn,#sortDistBtn').forEach(btn=>{
       const active = btn.dataset.sort===sortMode;
