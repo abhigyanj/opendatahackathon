@@ -3,7 +3,7 @@ import json
 import urllib.parse
 
 enc = "cp932"
-path = "new_data/pft.csv"
+path = "new_data/pcmt.csv"
 
 try:
     with open(path, encoding="utf-8-sig") as f:
@@ -18,21 +18,21 @@ print(f"Decoded with {enc}")
 lines = [x.strip() for x in lines]
 lines = [x.split(",") for x in lines]
 
+
 # Build structured park list (name, address, lat, lon, desc/url if present)
 parks = []
 raw_categories = []
 for row in lines:
-    if len(row) < 53:
-        continue
 
     # Extract all row-derived variables at the top
-    name = row[3].strip()
-    address = row[12].strip()
-    lat_raw = row[18].strip()
-    lon_raw = row[19].strip()
-    url = row[52].strip()
-    desc = row[34].strip()
-    category = row[-1].strip() if row[-1] else "その他" 
+    name = row[0].strip()
+    address = row[1].strip()
+    lat_raw = row[3].strip()
+    lon_raw = row[4].strip()
+    url = row[2].strip()
+    category = row[6].strip() if row[-1] else "その他" 
+
+    # print(name, address, lat_raw, lon_raw, url, category)
 
     if not lat_raw or not lon_raw:
         continue
@@ -49,7 +49,6 @@ for row in lines:
         "lat": lat,
         "lon": lon,
         "url": url,
-        "desc": desc,
         "category": category,
     })
 

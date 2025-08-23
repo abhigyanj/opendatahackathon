@@ -361,7 +361,6 @@
         let popup = `<b>${p.name}</b><br>${p.address||''}`;
         if(p.category) popup += `<br><span style=\"display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin-top:4px;\">${p.category}</span>`;
         if(p.url) popup += `<br><a href='${p.url}' target='_blank'>${tr('linkLabel')}</a>`;
-        if(p.desc) popup += `<br><small>${p.desc.slice(0,180)}...</small>`;
         m.bindPopup(popup);
         markers.push({marker:m, parkIdx:p._idx, cat:p.category});
       });
