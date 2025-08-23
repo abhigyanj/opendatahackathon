@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, request
 import json
 import urllib.parse
 
@@ -34,7 +34,7 @@ for row in lines:
     lon_raw = row[19].strip()
     url = row[52].strip()
     desc = row[34].strip()
-    category = row[-1].strip() if row[-1] else "その他"  # last column treated as category per user instruction
+    category = row[-1].strip() if row[-1] else "その他" 
 
     if not lat_raw or not lon_raw:
         continue
@@ -91,6 +91,51 @@ TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "template.html")
 with open(TEMPLATE_PATH, encoding="utf-8") as f:
     TEMPLATE = f.read()
 
+# Simple bilingual (Japanese/English) translation resources
+# Keys correspond to data-i18n attributes in template.
+i18n = {
+    "ja": {
+        "pageTitle": "Tokyo Parks Map | 都立公園マップ",
+        "headerTitle": "Tokyo Parks Map | 都立公園マップ",
+        "subtitle": "東京の公園を検索・発見できるインタラクティブマップ",
+        "searchHeading": "公園を検索",
+        "searchPlaceholder": "公園名で検索...",
+        "categoriesLabel": "カテゴリー",
+        "selectAll_allSelected": "全解除",
+        "selectAll_noneSelected": "全選択",
+        "selectAll_partial": "一部",
+        "legendTitle": "カテゴリー",
+        "aboutHeading": "このサイトについて",
+        "aboutParagraph1": "Tokyo Parks Map は東京都内の公園オープンデータを活用し、公園の場所や情報を探しやすくしたウェブアプリです。名前で検索したり、地図上で位置を確認したり、基本的な詳細を見ることができます。",
+        "bullet1": "日本語の名称で公園を検索",
+        "bullet2": "公園をクリックするとその位置へズーム",
+        "bullet3": "住所やリンク（あれば）を確認",
+        "bullet4": "東京都オープンデータを利用",
+        "bullet5": "Python / Flask / Leaflet.js で構築",
+        "footer": "© 2025 Tokyo Parks Map | オープンデータハッカソン"
+    },
+    "en": {
+        "pageTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
+        "headerTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
+        "subtitle": "Discover, search, and explore Tokyo's public parks on an interactive map.",
+        "searchHeading": "Search Parks",
+        "searchPlaceholder": "Search by park name...",
+        "categoriesLabel": "Categories",
+        "selectAll_allSelected": "Deselect All",
+        "selectAll_noneSelected": "Select All",
+        "selectAll_partial": "Some",
+        "legendTitle": "Categories",
+        "aboutHeading": "About This Website",
+        "aboutParagraph1": "Tokyo Parks Map is an open data web application that helps you discover and explore public parks across Tokyo. The interactive map lets you search by name, zoom to locations, and view basic details. Built for the Open Data Hackathon to promote civic use of public datasets.",
+        "bullet1": "Search parks by name (Japanese)",
+        "bullet2": "Click a park to zoom to its location",
+        "bullet3": "View addresses, links (where available)",
+        "bullet4": "Data sourced from Tokyo open government datasets",
+        "bullet5": "Built with Python, Flask & Leaflet.js",
+        "footer": "© 2025 Tokyo Parks Map | Open Data Hackathon"
+    }
+}
+
 
 @app.route("/")
 def index():
@@ -103,7 +148,9 @@ def index():
         "categoryColors": category_colors_hex
     }
     json_payload = urllib.parse.quote(json.dumps(payload, ensure_ascii=False))
+    i18n_payload = urllib.parse.quote(json.dumps(i18n, ensure_ascii=False))
     templ = TEMPLATE.replace('BOOTSTRAP_JSON_PLACEHOLDER', json_payload)
+    templ = templ.replace('I18N_JSON_PLACEHOLDER', i18n_payload)
     return render_template_string(templ)
 
 @app.route("/api/parks")

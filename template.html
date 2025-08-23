@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>Tokyo Parks Map | 都立公園マップ</title>
+  <title data-i18n="pageTitle">Tokyo Parks Map | 都立公園マップ</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -56,6 +56,24 @@
       color: #4f8ef7;
       letter-spacing: 1px;
     }
+  #panel .section-label { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+  #panel .section-label h3 { margin:0; font-size:0.95rem; letter-spacing:.5px; color:#333; font-weight:600; }
+  #panel small.muted { color:#667; font-size:.7rem; font-weight:500; }
+  #panel button.tiny-btn { background:#eef3f8; border:1px solid #c5d3de; border-radius:6px; font-size:11px; padding:4px 10px; cursor:pointer; line-height:1; letter-spacing:.5px; display:inline-flex; align-items:center; gap:4px; }
+  #panel button.tiny-btn:hover { background:#e2edf6; }
+  #panel button.tiny-btn.partial { background:#fff4d3; border-color:#f0c662; }
+  #panel button.tiny-btn.clear { background:#ffe3e3; border-color:#ffb2b2; }
+  #panel button.tiny-btn.clear:hover { background:#ffd4d4; }
+  /* Category list items */
+  .cat-item { display:flex; align-items:flex-start; gap:6px; cursor:pointer; position:relative; font-size:12.5px; line-height:1.25; padding:4px 2px 4px 0; }
+  .cat-item input.catChk { position:absolute; opacity:0; inset:0; cursor:pointer; }
+  .cat-item .fake-box { width:18px; height:18px; border:2px solid #4f8ef7; border-radius:5px; display:flex; align-items:center; justify-content:center; background:#4f8ef7; flex:0 0 18px; box-sizing:border-box; position:relative; }
+  .cat-item .fake-box .tick { font-size:13px; line-height:1; font-weight:700; color:#fff; transition:opacity .15s; }
+  .cat-item.unchecked .fake-box { background:#fff; border-color:#9bb7cc; }
+  .cat-item.unchecked .fake-box .tick { opacity:0; }
+  .cat-item:focus-within { outline:2px solid #1cb5e0; outline-offset:2px; }
+  .cat-item .color-dot { width:13px; height:13px; border-radius:50%; border:1px solid #3333; flex:0 0 13px; margin-top:2px; }
+  .cat-item .cat-label { white-space:normal; word-break:keep-all; overflow-wrap:anywhere; flex:1; min-width:0; }
     #panel input {
       width: 100%;
       box-sizing: border-box;
@@ -151,33 +169,40 @@
 </head>
 <body>
   <header>
-    <h1>Tokyo Parks Map <span style="font-size:1.2rem;">| 都立公園マップ</span></h1>
-    <p>Discover, search, and explore Tokyo's public parks on an interactive map.</p>
+    <div style="display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;">
+      <h1 data-i18n="headerTitle">Tokyo Parks Map | 都立公園マップ</h1>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="lang-ja" class="lang-btn" data-lang="ja" aria-pressed="true">日本語</button>
+        <button id="lang-en" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p data-i18n="subtitle">Discover, search, and explore Tokyo's public parks on an interactive map.</p>
   </header>
   <div class="container">
     <div id="panel">
-      <strong>公園を検索</strong><br>
-      <input id="q" placeholder="公園名で検索...">
-      <div style="margin-top:12px; font-size:0.9rem; color:#555; display:flex;align-items:center;justify-content:space-between;">
-        <span>カテゴリー</span>
-        <button id="catSelectAll" style="background:#eef3f8;border:1px solid #c5d3de;border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;">全選択</button>
+      <strong data-i18n="searchHeading">公園を検索</strong><br>
+      <input id="q" placeholder="公園名で検索..." data-i18n-placeholder="searchPlaceholder">
+      <div class="section-label">
+        <h3><span data-i18n="categoriesLabel">カテゴリー</span> <small id="catCount" class="muted"></small></h3>
+        <button id="catSelectAll" class="tiny-btn" type="button" aria-pressed="true" data-i18n-dynamic="selectAll">全解除</button>
       </div>
-      <div id="catBox" style="margin-top:6px; max-height:180px; overflow:auto; border:1px solid #e0e6ea; border-radius:6px; padding:6px 8px; background:#fafcfd; font-size:12px; line-height:1.35; display:grid; grid-template-columns: 1fr 1fr; gap:2px 8px;"></div>
+  <div id="catBox" style="margin-top:6px; max-height:190px; overflow:auto; border:1px solid #dde5ea; border-radius:8px; padding:8px 10px 6px 10px; background:#fbfdfe; font-size:12.5px; line-height:1.35; display:grid; grid-template-columns: repeat(auto-fill,minmax(170px,1fr)); gap:4px 14px; scrollbar-width:thin;">
+      </div>
       <div id="list"></div>
     </div>
     <div class="about">
-      <h2>About This Website</h2>
-      <p>
-        <b>Tokyo Parks Map</b> is an open-data web application that helps you discover and explore public parks across Tokyo. The interactive map allows you to search for parks by name, view their locations, and access details such as addresses and descriptions. This project is built for the Open Data Hackathon to promote the use of public data for the benefit of residents and visitors.
+      <h2 data-i18n="aboutHeading">About This Website</h2>
+      <p data-i18n="aboutParagraph1">
+        Tokyo Parks Map is an open-data web application that helps you discover and explore public parks across Tokyo.
       </p>
       <ul>
-        <li>Search for parks by name in Japanese</li>
-        <li>Click on a park to zoom to its location on the map</li>
-        <li>View park details, addresses, and links (where available)</li>
-        <li>Data sourced from Tokyo's open government datasets</li>
-        <li>Built with Python, Flask, and Folium/Leaflet.js</li>
+        <li data-i18n="bullet1">Search for parks by name in Japanese</li>
+        <li data-i18n="bullet2">Click on a park to zoom to its location on the map</li>
+        <li data-i18n="bullet3">View park details, addresses, and links (where available)</li>
+        <li data-i18n="bullet4">Data sourced from Tokyo's open government datasets</li>
+        <li data-i18n="bullet5">Built with Python, Flask, and Folium/Leaflet.js</li>
       </ul>
-      <p style="margin-top:1.2em; color:#888; font-size:0.98em;">&copy; 2025 Tokyo Parks Map | Open Data Hackathon</p>
+      <p style="margin-top:1.2em; color:#888; font-size:0.98em;" data-i18n="footer">© 2025 Tokyo Parks Map | Open Data Hackathon</p>
     </div>
   </div>
   <div class="map-wrap">
@@ -187,7 +212,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     // Bootstrapped data placeholder; replaced server-side.
-    const {parks, centerLat, centerLon, categoryColors} = JSON.parse(decodeURIComponent('BOOTSTRAP_JSON_PLACEHOLDER'));
+  const {parks, centerLat, centerLon, categoryColors} = JSON.parse(decodeURIComponent('BOOTSTRAP_JSON_PLACEHOLDER'));
+  const I18N = JSON.parse(decodeURIComponent('I18N_JSON_PLACEHOLDER'));
+  let currentLang = (localStorage.getItem('lang')||'ja');
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
     const catBox = document.getElementById('catBox');
@@ -197,65 +224,94 @@
     function cssSafe(s){return s.replace(/[^a-zA-Z0-9_-]/g,'_');}
     
     function buildCategoryFilters(){
-      catBox.innerHTML = categories.map(cat=>`<label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;white-space:nowrap;">
-        <input type="checkbox" class="catChk" value="${cat.replace(/"/g,'&quot;')}" checked style="margin:0;">
-        <span style="display:inline-flex;align-items:center;gap:4px;">
-          <span style="width:10px;height:10px;border-radius:50%;background:var(--cat-${cssSafe(cat)},#888);border:1px solid #999;"></span>
-          <span>${cat}</span>
-        </span>
-      </label>`).join('');
-      catBox.querySelectorAll('.catChk').forEach(cb=>cb.addEventListener('change', applyFilters));
+      catBox.innerHTML = categories.map(cat=>{
+        const safe = cat.replace(/"/g,'&quot;');
+        return `<label class="cat-item" data-cat="${safe}">
+          <input type="checkbox" class="catChk" value="${safe}" checked aria-label="${safe}">
+          <span class="fake-box"><span class="tick">✓</span></span>
+          <span class="color-dot" style="background:var(--cat-${cssSafe(cat)},#666);"></span>
+          <span class="cat-label">${cat}</span>
+        </label>`;
+      }).join('');
+      catBox.querySelectorAll('.catChk').forEach(cb=>{
+        const label = cb.closest('.cat-item');
+        if(!cb.checked) label.classList.add('unchecked');
+        cb.addEventListener('change', ()=>{
+          const lbl = cb.closest('.cat-item');
+          if(cb.checked) lbl.classList.remove('unchecked'); else lbl.classList.add('unchecked');
+          applyFilters();
+        });
+      });
+      updateCatCount();
+      updateSelectAllButton();
     }
     
     buildCategoryFilters();
     
     selectAllBtn.addEventListener('click', (e)=>{
       e.preventDefault();
-      const all = Array.from(catBox.querySelectorAll('.catChk'));
-      const allChecked = all.every(c=>c.checked);
-      all.forEach(c=>c.checked = !allChecked);
-      selectAllBtn.textContent = allChecked ? '全選択' : '全解除';
+      const boxes = Array.from(catBox.querySelectorAll('.catChk'));
+      const allChecked = boxes.every(c=>c.checked);
+      const targetState = !allChecked;
+      boxes.forEach(c=>{ c.checked = targetState; const label=c.closest('.cat-item'); if(targetState) label.classList.remove('unchecked'); else label.classList.add('unchecked'); });
       applyFilters();
+      updateSelectAllButton();
     });
 
-    // Initialize Leaflet map
+    // Assign stable indices to handle duplicate coordinates distinctly
+    parks.forEach((p,i)=>p._idx=i);
     const leafletMap = L.map('map', {zoomControl:true}).setView([centerLat, centerLon], 10);
-    // Base layers
     const baseLayers = {
-      'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(leafletMap),
-      'Carto Light': L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {attribution:'© OpenStreetMap © CARTO', maxZoom:20}),
-      'Carto Dark': L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {attribution:'© OpenStreetMap © CARTO', maxZoom:20}),
+      'OpenStreetMap': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(leafletMap),
+      'OSM HOT': L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors, HOT'
+      }),
+      'OpenTopoMap': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: '© OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)'
+      }),
+      'Carto Light': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        attribution: '© OpenStreetMap © CARTO'
+      }),
+      'Carto Dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        attribution: '© OpenStreetMap © CARTO'
+      }),
+      'Esri Imagery': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 20,
+        attribution: 'Tiles © Esri & contributors'
+      }),
+      'Esri Topo': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 20,
+        attribution: 'Tiles © Esri & contributors'
+      })
     };
     L.control.layers(baseLayers, null, {position:'topright'}).addTo(leafletMap);
-    // Create markers layer group for easier management
     const markerGroup = L.layerGroup().addTo(leafletMap);
-    const markerIndex = {};
-    function addMarkers() {
+  const markers = []; // {marker, parkIdx, cat}
+    function addMarkers(){
       parks.forEach(p=>{
-        const color = (categoryColors && categoryColors[p.category]) ? categoryColors[p.category] : 'blue';
-        const marker = L.circleMarker([p.lat, p.lon], {
-          radius:6,
-            color: '#222',
-            weight:1,
-            fillColor: color,
-            fillOpacity:0.85
-        }).addTo(markerGroup);
+        const color = (categoryColors && categoryColors[p.category]) ? categoryColors[p.category] : '#2a81cb';
+        const m = L.circleMarker([p.lat, p.lon], {radius:6,color:'#222',weight:1,fillColor:color,fillOpacity:0.85}).addTo(markerGroup);
         let popup = `<b>${p.name}</b><br>${p.address||''}`;
-        if(p.category) popup += `<br><span style="display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin-top:4px;">${p.category}</span>`;
+        if(p.category) popup += `<br><span style=\"display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin-top:4px;\">${p.category}</span>`;
         if(p.url) popup += `<br><a href='${p.url}' target='_blank'>Link</a>`;
         if(p.desc) popup += `<br><small>${p.desc.slice(0,180)}...</small>`;
-        marker.bindPopup(popup);
-        const key = `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
-        markerIndex[key] = marker;
+        m.bindPopup(popup);
+  markers.push({marker:m, parkIdx:p._idx, cat:p.category});
       });
     }
     addMarkers();
 
     function focusPark(p){
   leafletMap.flyTo([p.lat, p.lon], 15, {animate:true, duration:0.75});
-  const key = `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
-  const marker = markerIndex[key];
-  if(marker) setTimeout(()=>marker.openPopup(), 450);
+  const entry = markers.find(e=>e.parkIdx===p._idx);
+  if(entry) setTimeout(()=>entry.marker.openPopup(), 450);
     }
     function render(list){
       listEl.innerHTML = "";
@@ -291,6 +347,8 @@
       if(text) filtered = filtered.filter(p=> p.name.includes(text));
       render(filtered);
       updateMarkerVisibility(filtered);
+  updateCatCount();
+  updateSelectAllButton();
     }
     qEl.oninput = applyFilters;
 
@@ -308,8 +366,12 @@
     }
     // Marker visibility filtering
     function updateMarkerVisibility(visibleList){
-      const allowed = new Set(visibleList.map(p=>`${p.lat.toFixed(6)},${p.lon.toFixed(6)}`));
-  Object.entries(markerIndex).forEach(([k,m])=>{ m.getElement().style.display = allowed.has(k)?'':'none'; });
+      const allowed = new Set(visibleList.map(p=>p._idx));
+      markers.forEach(({marker, parkIdx})=>{
+        const el = marker.getElement();
+        if(!el) return;
+        el.style.display = allowed.has(parkIdx)?'':'none';
+      });
     }
 
     // Inject dynamic CSS vars for category colors based on first matching marker icon color class
@@ -323,7 +385,7 @@
     }
     function leafletColorToHex(c){ return c; }
     
-    function buildLegend(sample){
+  function buildLegend(sample){
       const legend = document.createElement('div');
       legend.style.position='absolute';
       legend.style.bottom='8px';
@@ -335,16 +397,103 @@
       legend.style.borderRadius='6px';
       legend.style.maxHeight='220px';
       legend.style.overflow='auto';
-      legend.innerHTML = '<b style="font-size:12px;">カテゴリー</b><br>' +
+  const legendTitle = tr('legendTitle');
+  legend.innerHTML = `<b style="font-size:12px;">${legendTitle}</b><br>` +
         Object.keys(sample).sort().map(cat=>`<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">
           <span style="width:12px;height:12px;border-radius:50%;background:var(--cat-${cssSafe(cat)});"></span>
           <span>${cat}</span></div>`).join('');
       document.querySelector('.map-wrap').appendChild(legend);
     }
 
-  function initAfterMap(){ setupEnhancements(); deriveCategoryColors(); applyFilters(); }
+  function syncMarkerColors(){
+    // Align marker fillColor with CSS vars (in case palette changes)
+    const rootStyles = getComputedStyle(document.documentElement);
+    markers.forEach(obj=>{
+      if(!obj.cat) return;
+      const varName = `--cat-${cssSafe(obj.cat)}`;
+      const col = rootStyles.getPropertyValue(varName).trim();
+      if(col) obj.marker.setStyle({fillColor: col});
+    });
+  }
+  function initAfterMap(){ setupEnhancements(); deriveCategoryColors(); syncMarkerColors(); applyFilters(); }
   initAfterMap();
   render(parks);
+
+  // Helpers for dynamic UI bits
+  function updateCatCount(){
+    const countEl=document.getElementById('catCount');
+    if(!countEl) return;
+    const total=categories.length;
+    const selected=catBox.querySelectorAll('.catChk:checked').length;
+    countEl.textContent = `${selected}/${total}`;
+  }
+  function updateSelectAllButton(){
+    const btn = selectAllBtn;
+    const boxes = Array.from(catBox.querySelectorAll('.catChk'));
+    const selected = boxes.filter(b=>b.checked).length;
+    if(selected===0){
+      btn.textContent= tr('selectAll_noneSelected');
+      btn.classList.remove('partial','clear');
+      btn.classList.add('clear');
+      btn.setAttribute('aria-pressed','false');
+    } else if(selected===boxes.length){
+      btn.textContent= tr('selectAll_allSelected');
+      btn.classList.remove('partial','clear');
+      btn.setAttribute('aria-pressed','true');
+    } else {
+      btn.textContent= tr('selectAll_partial');
+      btn.classList.add('partial');
+      btn.classList.remove('clear');
+      btn.setAttribute('aria-pressed','mixed');
+    }
+  }
+
+  // Translation helpers
+  function tr(key){
+    return (I18N[currentLang] && I18N[currentLang][key]) || key;
+  }
+  function applyTranslations(){
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const k = el.getAttribute('data-i18n');
+      const txt = tr(k);
+      if(txt) el.textContent = txt;
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+      const k = el.getAttribute('data-i18n-placeholder');
+      const txt = tr(k);
+      if(txt) el.setAttribute('placeholder', txt);
+    });
+    // dynamic select-all is recalculated by updateSelectAllButton()
+    updateSelectAllButton();
+  }
+  function setupLangButtons(){
+    document.querySelectorAll('.lang-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.lang===currentLang);
+      btn.setAttribute('aria-pressed', btn.dataset.lang===currentLang ? 'true':'false');
+      btn.onclick = ()=>{
+        currentLang = btn.dataset.lang;
+        localStorage.setItem('lang', currentLang);
+        document.querySelectorAll('.lang-btn').forEach(b=>{
+          b.classList.toggle('active', b===btn);
+          b.setAttribute('aria-pressed', b===btn ? 'true':'false');
+        });
+        // Rebuild legend for translated title
+        document.querySelectorAll('.map-wrap > div').forEach(div=>{ if(div.innerHTML && div.innerHTML.includes('var(--cat-')){ div.remove(); }});
+        buildLegend(categoryColors);
+        applyTranslations();
+      };
+    });
+  }
+  // Style for language buttons injected dynamically
+  (function(){
+    const style=document.createElement('style');
+    style.textContent = `.lang-btn{background:#ffffff22;border:1px solid #ffffff66;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;backdrop-filter:blur(4px);} .lang-btn.active{background:#fff;color:#1b6dcf;border-color:#fff;} .lang-btn:hover{background:#ffffff55;}`;
+    document.head.appendChild(style);
+  })();
+  // Initial translation setup
+  applyTranslations();
+  setupLangButtons();
 
   </script>
 </body>
