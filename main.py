@@ -28,8 +28,10 @@ for row in lines:
     address = row[12].strip()
     lat_raw = row[18].strip()
     lon_raw = row[19].strip()
-    url = ""
-    desc = ""
+    url = row[52].strip()
+    desc = row[34].strip()
+
+    print(row[34])
 
     if not lat_raw or not lon_raw:
         continue
@@ -45,17 +47,17 @@ for row in lines:
     if abs(lat) > 90 or abs(lon) > 180:
         continue
 
-    # Try to find a URL in the row
-    for c in row:
-        if c.startswith("http://") or c.startswith("https://"):
-            url = c
-            break
+    # # Try to find a URL in the row
+    # for c in row:
+    #     if c.startswith("http://") or c.startswith("https://"):
+    #         url = c
+    #         break
 
     # Grab a long-ish Japanese description field (heuristic: length > 40, not URL)
-    for c in row:
-        if len(c) > 40 and "http" not in c and all(x not in c for x in ['〒']):
-            desc = c.replace('"', '').strip()
-            break
+    # for c in row:
+    #     if len(c) > 40 and "http" not in c and all(x not in c for x in ['〒']):
+    #         desc = c.replace('"', '').strip()
+    #         break
 
     parks.append({
         "name": name,
