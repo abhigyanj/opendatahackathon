@@ -4,6 +4,8 @@ import folium
 enc = "cp932"
 path = "new_data/pft.csv"
 
+print("hello rath")
+
 try:
     with open(path, encoding="utf-8-sig") as f:
         lines = f.readlines()
