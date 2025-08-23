@@ -79,10 +79,17 @@
       cursor: pointer;
       padding: 7px 0 7px 0;
       border-bottom: 1px solid #f0f0f0;
-      transition: background 0.15s;
+      transition: background 0.15s, color 0.15s;
+      border-left: 4px solid transparent;
     }
     #list div:hover {
       background: #e3f0ff;
+    }
+    #list div.selected {
+      background: #d0e7ff;
+      color: #1976d2;
+      border-left: 4px solid #4f8ef7;
+      font-weight: 700;
     }
     .about {
       background: #fff;
@@ -115,12 +122,20 @@
     }
     .map-wrap {
       width: 100%;
-      min-height: 500px;
+      height: 520px;
+      max-width: 1200px;
       margin: 0 auto 32px auto;
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 2px 16px #0002;
       background: #fff;
+      position: relative;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+      max-height: 520px;
     }
     @media (max-width: 900px) {
       .container {
@@ -168,15 +183,74 @@
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
 
+    // Robust map + marker handling
+    let leafletMap = null;
+    function detectMap(){
+      if(leafletMap) return leafletMap;
+      // Use injected reference first
+      if(window.leafletMapObj) {
+        leafletMap = window.leafletMapObj;
+        return leafletMap;
+      }
+      // Direct folium pattern: div.folium-map id="map_xxxxx"
+      const mapDiv = document.querySelector('.folium-map');
+      if(mapDiv){
+        const id = mapDiv.id; // e.g. map_123abc
+        if(id && window[id]) leafletMap = window[id];
+      }
+      // Fallback: scan window keys starting with map_
+      if(!leafletMap){
+        for (const k in window){
+          if(k.startsWith('map_')){
+            const v = window[k];
+            if(v && typeof v.setView === 'function' && v._layers){
+              leafletMap = v; break;
+            }
+          }
+        }
+      }
+      return leafletMap;
+    }
+
+    function focusPark(p){
+      const mapObj = detectMap();
+      if(!mapObj) return;
+      mapObj.flyTo([p.lat, p.lon], 15, {animate:true, duration:0.75});
+      setTimeout(()=>{
+        // Try to find existing marker
+        let found=null;
+        for(const id in mapObj._layers){
+          const layer = mapObj._layers[id];
+            if(layer && layer.getLatLng){
+              const ll = layer.getLatLng();
+              if(Math.abs(ll.lat - p.lat) < 1e-6 && Math.abs(ll.lng - p.lon) < 1e-6){
+                found = layer; break;
+              }
+            }
+        }
+        if(found && found.openPopup){
+          found.openPopup();
+        } else if(window.L){
+          window.L.popup({maxWidth:260}).setLatLng([p.lat,p.lon]).setContent(`<b>${p.name}</b><br>${p.address||''}`).openOn(mapObj);
+        }
+      }, 400);
+    }
     function render(list){
       listEl.innerHTML = "";
-      list.slice(0,100).forEach(p=>{
+      list.slice(0,100).forEach((p, idx)=>{
         const d = document.createElement('div');
         d.textContent = p.name;
+        d.tabIndex = 0;
+        d.setAttribute('role', 'button');
+        d.setAttribute('aria-label', p.name);
         d.onclick = ()=> {
-          // Find marker by lat/lon (Leaflet global 'map' & layers created by Folium)
-          if(window.map) map.setView([p.lat, p.lon], 15);
+          // Remove previous selection
+          listEl.querySelectorAll('.selected').forEach(el=>el.classList.remove('selected'));
+          d.classList.add('selected');
+          // Find marker by lat/lon and open popup
+          focusPark(p);
         };
+        d.onkeydown = (e) => { if(e.key==="Enter"||e.key===" ") d.onclick(); };
         listEl.appendChild(d);
       });
     }
@@ -188,7 +262,29 @@
       render(r);
     };
 
-    render(parks);
+    // Wait for map and markers to be ready
+    function setupEnhancements() {
+      const mapObj = detectMap();
+      if(!mapObj) return;
+      // Add bounds & zoom constraints once
+      if(!mapObj.__customBounded){
+        const bounds = [[35.4, 139.4],[35.9, 140.1]];
+        mapObj.setMaxBounds(bounds);
+        mapObj.on('drag', () => mapObj.panInsideBounds(bounds, { animate:false }));
+        mapObj.options.minZoom = 10;
+        mapObj.options.maxZoom = 18;
+        mapObj.__customBounded = true;
+      }
+    }
+    // Folium/Leaflet loads map async, so wait for it
+    function waitForMap(cb, tries=0) {
+      const mapObj = detectMap();
+      if(mapObj && mapObj._layers && Object.keys(mapObj._layers).length>0) { cb(); return; }
+      if(tries>120) { console.warn('Map not detected'); return; }
+      setTimeout(()=>waitForMap(cb, tries+1), 100);
+    }
+    waitForMap(setupEnhancements);
+  render(parks);
   </script>
 </body>
 </html>
