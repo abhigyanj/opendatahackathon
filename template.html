@@ -158,6 +158,10 @@
     <div id="panel">
       <strong>公園を検索</strong><br>
       <input id="q" placeholder="公園名で検索...">
+      <div style="margin-top:12px; font-size:0.9rem; color:#555;">カテゴリー</div>
+      <select id="catFilter" style="width:100%;margin-top:4px;padding:6px 8px;border:1px solid #cfd8dc;border-radius:6px;font-size:0.95rem;">
+        <option value="">(すべて)</option>
+      </select>
       <div id="list"></div>
     </div>
     <div class="about">
@@ -182,6 +186,11 @@
     const parks = {{ parks_json|safe }};
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
+    const catEl = document.getElementById('catFilter');
+
+    // Build category options
+    const categories = [...new Set(parks.map(p=>p.category).filter(Boolean))].sort();
+    categories.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.textContent=c; catEl.appendChild(opt); });
 
     // Robust map + marker handling
     let leafletMap = null;
@@ -237,9 +246,12 @@
     }
     function render(list){
       listEl.innerHTML = "";
-      list.slice(0,100).forEach((p, idx)=>{
+      list.slice(0,300).forEach((p, idx)=>{
         const d = document.createElement('div');
         d.textContent = p.name;
+        if(p.category){
+          d.style.borderLeft = `6px solid var(--cat-${cssSafe(p.category)})`;
+        }
         d.tabIndex = 0;
         d.setAttribute('role', 'button');
         d.setAttribute('aria-label', p.name);
@@ -255,12 +267,17 @@
       });
     }
 
-    qEl.oninput = () => {
-      const v = qEl.value.trim();
-      if(!v){ render(parks); return; }
-      const r = parks.filter(p => p.name.includes(v));
-      render(r);
-    };
+    function applyFilters(){
+      const text = qEl.value.trim();
+      const cat = catEl.value;
+      let filtered = parks;
+      if(cat) filtered = filtered.filter(p=>p.category===cat);
+      if(text) filtered = filtered.filter(p=>p.name.includes(text));
+      render(filtered);
+      updateMarkerVisibility(filtered);
+    }
+    qEl.oninput = applyFilters;
+    catEl.onchange = applyFilters;
 
     // Wait for map and markers to be ready
     function setupEnhancements() {
@@ -283,8 +300,75 @@
       if(tries>120) { console.warn('Map not detected'); return; }
       setTimeout(()=>waitForMap(cb, tries+1), 100);
     }
-    waitForMap(setupEnhancements);
-  render(parks);
+    // Marker visibility filtering
+    function updateMarkerVisibility(visibleList){
+      const mapObj = detectMap();
+      if(!mapObj) return;
+      const allowed = new Set(visibleList.map(p=>`${p.lat.toFixed(6)},${p.lon.toFixed(6)}`));
+      for(const id in mapObj._layers){
+        const layer = mapObj._layers[id];
+        if(layer && layer.getLatLng && layer._icon){
+          const ll = layer.getLatLng();
+          const key = `${ll.lat.toFixed(6)},${ll.lng.toFixed(6)}`;
+          if(allowed.has(key)){
+            layer._icon.style.display = '';
+            if(layer._shadow) layer._shadow.style.display='';
+          } else {
+            layer._icon.style.display = 'none';
+            if(layer._shadow) layer._shadow.style.display='none';
+          }
+        }
+      }
+    }
+
+    // Inject dynamic CSS vars for category colors based on first matching marker icon color class
+    function deriveCategoryColors(){
+      const mapObj = detectMap();
+      if(!mapObj) return;
+      const sample = {};
+      for(const id in mapObj._layers){
+        const layer = mapObj._layers[id];
+        if(layer && layer.options && layer.options.icon && layer.options.icon.options && layer.options.icon.options.markerColor){
+          const ll = layer.getLatLng();
+          const park = parks.find(p=>Math.abs(p.lat-ll.lat)<1e-6 && Math.abs(p.lon-ll.lng)<1e-6);
+          if(park && !sample[park.category]){
+            sample[park.category] = layer.options.icon.options.markerColor;
+          }
+        }
+      }
+      let css = ':root{' ;
+      Object.entries(sample).forEach(([cat,color])=>{ css += `--cat-${cssSafe(cat)}:${leafletColorToHex(color)};`; });
+      css += '}';
+      const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style);
+      buildLegend(sample);
+    }
+    function cssSafe(s){return s.replace(/[^a-zA-Z0-9_-]/g,'_');}
+    function leafletColorToHex(c){
+      const map={red:'#d63e2a',blue:'#2a81cb',green:'#2aad27',purple:'#6f42c1',orange:'#f69730',darkred:'#772015',cadetblue:'#3c8dbc',darkgreen:'#115f0a',darkpurple:'#301934',pink:'#ff4da3',lightblue:'#87ceeb',lightgreen:'#90ee90',gray:'#808080',black:'#000000',lightgray:'#d3d3d3',beige:'#f5f5dc',lightred:'#ff7f7f',darkblue:'#0a3172',white:'#ffffff'}; return map[c]||c; }
+    function buildLegend(sample){
+      const legend = document.createElement('div');
+      legend.style.position='absolute';
+      legend.style.bottom='8px';
+      legend.style.right='8px';
+      legend.style.background='rgba(255,255,255,0.92)';
+      legend.style.padding='8px 10px';
+      legend.style.fontSize='12px';
+      legend.style.border='1px solid #ccc';
+      legend.style.borderRadius='6px';
+      legend.style.maxHeight='180px';
+      legend.style.overflow='auto';
+      legend.innerHTML = '<b style="font-size:12px;">カテゴリー</b><br>' +
+        Object.keys(sample).sort().map(cat=>`<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">
+          <span style="width:12px;height:12px;border-radius:50%;background:var(--cat-${cssSafe(cat)});"></span>
+          <span>${cat}</span></div>`).join('');
+      document.querySelector('.map-wrap').appendChild(legend);
+    }
+
+    function initAfterMap(){ deriveCategoryColors(); applyFilters(); }
+    waitForMap(()=>{ setupEnhancements(); initAfterMap(); });
+    // Initial list before map if needed
+    render(parks);
+    
   </script>
 </body>
 </html>
