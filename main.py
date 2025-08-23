@@ -5,8 +5,6 @@ import urllib.parse
 enc = "cp932"
 path = "new_data/pft.csv"
 
-print("hello rath")
-
 try:
     with open(path, encoding="utf-8-sig") as f:
         lines = f.readlines()
@@ -101,6 +99,7 @@ i18n = {
         "searchHeading": "公園を検索",
         "searchPlaceholder": "公園名で検索...",
         "categoriesLabel": "カテゴリー",
+        "useLocationLabel": "現在地",
         "selectAll_allSelected": "全解除",
         "selectAll_noneSelected": "全選択",
         "selectAll_partial": "一部",
@@ -121,6 +120,7 @@ i18n = {
         "searchHeading": "Search Parks",
         "searchPlaceholder": "Search by park name...",
         "categoriesLabel": "Categories",
+        "useLocationLabel": "Location",
         "selectAll_allSelected": "Deselect All",
         "selectAll_noneSelected": "Select All",
         "selectAll_partial": "Some",

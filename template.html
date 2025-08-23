@@ -182,6 +182,12 @@
     <div id="panel">
       <strong data-i18n="searchHeading">公園を検索</strong><br>
       <input id="q" placeholder="公園名で検索..." data-i18n-placeholder="searchPlaceholder">
+      <div id="locControls" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        <button id="locBtn" type="button" class="tiny-btn" style="display:inline-flex;align-items:center;gap:4px;">📍 <span data-i18n="useLocationLabel">現在地</span></button>
+        <button id="sortNameBtn" type="button" class="tiny-btn active" data-sort="name">A-Z</button>
+        <button id="sortDistBtn" type="button" class="tiny-btn" data-sort="distance">距離</button>
+        <span id="locStatus" class="muted" style="flex:1; font-size:11px;"></span>
+      </div>
       <div class="section-label">
         <h3><span data-i18n="categoriesLabel">カテゴリー</span> <small id="catCount" class="muted"></small></h3>
         <button id="catSelectAll" class="tiny-btn" type="button" aria-pressed="true" data-i18n-dynamic="selectAll">全解除</button>
@@ -215,6 +221,10 @@
   const {parks, centerLat, centerLon, categoryColors} = JSON.parse(decodeURIComponent('BOOTSTRAP_JSON_PLACEHOLDER'));
   const I18N = JSON.parse(decodeURIComponent('I18N_JSON_PLACEHOLDER'));
   let currentLang = (localStorage.getItem('lang')||'ja');
+  let userLocation = null; // {lat, lon, accuracy}
+  let locationMarker = null;
+  let locationAccuracyCircle = null;
+  let sortMode = 'name';
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
     const catBox = document.getElementById('catBox');
@@ -317,7 +327,17 @@
       listEl.innerHTML = "";
       list.slice(0,300).forEach((p, idx)=>{
         const d = document.createElement('div');
-        d.textContent = p.name;
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = p.name;
+        d.appendChild(nameSpan);
+        if(typeof p.dist === 'number' && userLocation){
+          const distSpan = document.createElement('span');
+          distSpan.style.fontSize='11px';
+          distSpan.style.marginLeft='6px';
+            distSpan.style.color='#555';
+          distSpan.textContent = `(${formatDistance(p.dist)})`;
+          d.appendChild(distSpan);
+        }
         if(p.category){
           d.style.borderLeft = `6px solid var(--cat-${cssSafe(p.category)})`;
         }
@@ -345,6 +365,15 @@
         filtered = filtered.filter(p=> set.has(p.category));
       }
       if(text) filtered = filtered.filter(p=> p.name.includes(text));
+      if(sortMode==='distance' && userLocation){
+        filtered = [...filtered].sort((a,b)=>{
+          if(typeof a.dist !== 'number') return 1;
+          if(typeof b.dist !== 'number') return -1;
+          return a.dist - b.dist;
+        });
+      } else if(sortMode==='name') {
+        filtered = [...filtered].sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
+      }
       render(filtered);
       updateMarkerVisibility(filtered);
   updateCatCount();
@@ -494,6 +523,95 @@
   // Initial translation setup
   applyTranslations();
   setupLangButtons();
+
+  // --- Location / Distance Features ---
+  function haversine(lat1, lon1, lat2, lon2){
+    const R = 6371000; // m
+    const toRad = d=>d*Math.PI/180;
+    const dLat = toRad(lat2-lat1);
+    const dLon = toRad(lon2-lon1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // meters
+  }
+  function updateDistances(){
+    if(!userLocation) return;
+    parks.forEach(p=>{
+      p.dist = haversine(userLocation.lat, userLocation.lon, p.lat, p.lon);
+    });
+  }
+  function formatDistance(m){
+    if(m < 1000) return `${Math.round(m)} m`;
+    const km = m/1000;
+    if(km < 10) return `${km.toFixed(2)} km`;
+    return `${km.toFixed(1)} km`;
+  }
+  function requestLocation(force){
+    if(userLocation && !force){
+      updateDistances();
+      applyFilters();
+      return;
+    }
+    const statusEl = document.getElementById('locStatus');
+    statusEl.textContent = currentLang==='ja'? '位置情報取得中...' : 'Getting location...';
+    if(!navigator.geolocation){
+      statusEl.textContent = currentLang==='ja'? '未対応ブラウザ' : 'Geolocation unsupported';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const {latitude, longitude, accuracy} = pos.coords;
+      userLocation = {lat: latitude, lon: longitude, accuracy};
+      statusEl.textContent = currentLang==='ja'? '取得済' : 'Location set';
+      showUserLocation();
+      updateDistances();
+      applyFilters();
+      updatePopupsWithDirections();
+    }, err=>{
+      statusEl.textContent = (currentLang==='ja'? '失敗: ' : 'Error: ')+ err.message;
+    }, {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
+  }
+  function showUserLocation(){
+    if(!userLocation) return;
+    if(locationMarker){
+      locationMarker.setLatLng([userLocation.lat, userLocation.lon]);
+      if(locationAccuracyCircle) locationAccuracyCircle.setLatLng([userLocation.lat, userLocation.lon]);
+    } else {
+      locationMarker = L.marker([userLocation.lat, userLocation.lon], {title:'You'}).addTo(leafletMap);
+      locationAccuracyCircle = L.circle([userLocation.lat, userLocation.lon], {radius: userLocation.accuracy||30, color:'#136aec', fillColor:'#136aec', fillOpacity:0.15, weight:1}).addTo(leafletMap);
+    }
+  }
+  function updatePopupsWithDirections(){
+    if(!userLocation) return;
+    markers.forEach(({marker, parkIdx})=>{
+      const p = parks.find(pp=>pp._idx===parkIdx);
+      if(!p) return;
+      let popup = `<b>${p.name}</b><br>${p.address||''}`;
+      if(p.category) popup += `<br><span style=\"display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin-top:4px;\">${p.category}</span>`;
+      if(p.url) popup += `<br><a href='${p.url}' target='_blank'>Link</a>`;
+      if(typeof p.dist==='number') popup += `<br><small>${formatDistance(p.dist)}</small>`;
+      const gmaps = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lon}/${p.lat},${p.lon}`;
+      popup += `<br><a href='${gmaps}' target='_blank'>Directions</a>`;
+      marker.bindPopup(popup);
+    });
+  }
+  document.getElementById('locBtn').addEventListener('click', ()=>{ requestLocation(); });
+  document.getElementById('sortNameBtn').addEventListener('click', ()=>{ sortMode='name'; toggleSortButtons(); applyFilters(); });
+  document.getElementById('sortDistBtn').addEventListener('click', ()=>{ sortMode='distance'; if(!userLocation) requestLocation(); else { updateDistances(); } toggleSortButtons(); applyFilters(); });
+  function toggleSortButtons(){
+    document.querySelectorAll('#sortNameBtn,#sortDistBtn').forEach(btn=>{
+      const active = btn.dataset.sort===sortMode;
+      btn.classList.toggle('active', active);
+    });
+  }
+  // Optional: try auto locate after short delay (can be removed if undesired)
+  setTimeout(()=>{ /* requestLocation(); */ }, 2500);
+
+  // Enhance styles for active sort
+  (function(){
+    const style=document.createElement('style');
+    style.textContent += `.tiny-btn.active{background:#1cb5e0 !important; color:#fff !important; border-color:#1699bd !important;}`;
+    document.head.appendChild(style);
+  })();
 
   </script>
 </body>
