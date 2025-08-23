@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template_string
-import folium
+import json
+import urllib.parse
 
 enc = "cp932"
 path = "new_data/pft.csv"
@@ -33,7 +34,7 @@ for row in lines:
     lon_raw = row[19].strip()
     url = row[52].strip()
     desc = row[34].strip()
-    category = row[-1].strip() if row[-1] else ""  # last column treated as category per user instruction
+    category = row[-1].strip() if row[-1] else "その他"  # last column treated as category per user instruction
 
     if not lat_raw or not lon_raw:
         continue
@@ -54,7 +55,7 @@ for row in lines:
         "category": category,
     })
 
-# Build deterministic color palette for categories
+# Build deterministic color palette for categories (internal symbolic names)
 palette = [
     "red","blue","green","purple","orange","darkred","cadetblue","darkgreen","darkpurple","pink",
     "lightblue","lightgreen","gray","black","lightgray","beige","lightred","darkblue","white"
@@ -64,39 +65,23 @@ category_colors = {}
 for idx, cat in enumerate(distinct_categories):
     category_colors[cat] = palette[idx % len(palette)]
 
-# Attach color to each park (fallback color if missing)
-for p in parks:
-    p["color"] = category_colors.get(p.get("category"), "blue")
+# Mapping of Leaflet marker color names (and custom) to hex for consistent circle styling
+color_name_to_hex = {
+    'red':'#d63e2a','blue':'#2a81cb','green':'#2aad27','purple':'#6f42c1','orange':'#f69730','darkred':'#772015',
+    'cadetblue':'#3c8dbc','darkgreen':'#115f0a','darkpurple':'#301934','pink':'#ff4da3','lightblue':'#87ceeb',
+    'lightgreen':'#90ee90','gray':'#808080','black':'#000000','lightgray':'#d3d3d3','beige':'#f5f5dc','lightred':'#ff7f7f',
+    'darkblue':'#0a3172','white':'#ffffff'
+}
 
-# Center map (Tokyo)
+# Attach color to each park and compute hex fallback
+for p in parks:
+    name_color = category_colors.get(p.get("category"), "blue")
+    p["color"] = name_color
+    p["hex_color"] = color_name_to_hex.get(name_color, name_color)
+
+# Provide simple center coordinates (Tokyo) for template
 center_lat = 35.681236
 center_lon = 139.767125
-
-m = folium.Map(location=[center_lat, center_lon], zoom_start=10, tiles="OpenStreetMap")
-for p in parks:
-    popup_html = f"<b>{p['name']}</b><br>{p['address']}<br>"
-    if p['category']:
-        popup_html += f"<span style='display:inline-block;padding:2px 6px;background:#eee;border-radius:4px;font-size:11px;margin:2px 0;'>{p['category']}</span><br>"
-    if p['url']:
-        popup_html += f"<a href='{p['url']}' target='_blank'>Link</a><br>"
-    if p['desc']:
-        popup_html += f"<small>{p['desc'][:180]}...</small>"
-    # Use colored icon based on category color
-    icon = folium.Icon(color=p['color'], icon="info-sign")
-    folium.Marker(
-        [p['lat'], p['lon']],
-        popup=folium.Popup(popup_html, max_width=300),
-        tooltip=p['name'],
-        icon=icon
-    ).add_to(m)
-
-map_html = m._repr_html_()
-
-# Inject map reference for sidebar functionality
-map_html = map_html.replace('</script>', '''
-    // Expose map object for sidebar clicks
-    window.leafletMapObj = eval(Object.keys(window).find(k => k.startsWith('map_') && window[k] && window[k].setView));
-</script>''')
 
 app = Flask(__name__)
 
@@ -109,7 +94,17 @@ with open(TEMPLATE_PATH, encoding="utf-8") as f:
 
 @app.route("/")
 def index():
-    return render_template_string(TEMPLATE, map_html=map_html, parks_json=parks)
+    # Provide hex color mapping for template
+    category_colors_hex = {cat: color_name_to_hex.get(col, col) for cat, col in category_colors.items()}
+    payload = {
+        "parks": parks,
+        "centerLat": center_lat,
+        "centerLon": center_lon,
+        "categoryColors": category_colors_hex
+    }
+    json_payload = urllib.parse.quote(json.dumps(payload, ensure_ascii=False))
+    templ = TEMPLATE.replace('BOOTSTRAP_JSON_PLACEHOLDER', json_payload)
+    return render_template_string(templ)
 
 @app.route("/api/parks")
 def api_parks():
