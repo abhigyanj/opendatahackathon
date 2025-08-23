@@ -2,13 +2,14 @@ from flask import Flask, jsonify, render_template_string
 import folium
 
 enc = "cp932"
+path = "pf.csv"
 
 try:
-    with open("data/c.csv", encoding="utf-8-sig") as f:
+    with open(path, encoding="utf-8-sig") as f:
         lines = f.readlines()
     print("Decoded with utf-8-sig")
 except UnicodeDecodeError:
-    with open("data/c.csv", encoding="cp932", errors="replace") as f:
+    with open(path, encoding="cp932", errors="replace") as f:
         lines = f.readlines()
     print("Decoded with cp932 (with replacements)")
 print(f"Decoded with {enc}")
@@ -19,11 +20,17 @@ lines = [x.split(",") for x in lines]
 # Build structured park list (name, address, lat, lon, desc/url if present)
 parks = []
 for row in lines:
-    if len(row) < 12:
+    if len(row) < 20:
         continue
-    name = row[4].strip()
-    lat_raw = row[10].strip()
-    lon_raw = row[11].strip()
+
+    # Extract all row-derived variables at the top
+    name = row[3].strip()
+    address = row[12].strip()
+    lat_raw = row[18].strip()
+    lon_raw = row[19].strip()
+    url = ""
+    desc = ""
+
     if not lat_raw or not lon_raw:
         continue
     try:
@@ -31,24 +38,25 @@ for row in lines:
         lon = float(lon_raw)
     except ValueError:
         continue
+
     # Fix obviously swapped coordinates (latitude should be between -90..90)
     if abs(lat) > 90 and abs(lon) <= 90:
         lat, lon = lon, lat
     if abs(lat) > 90 or abs(lon) > 180:
         continue
-    address = row[8].strip()
-    url = ""
+
     # Try to find a URL in the row
     for c in row:
         if c.startswith("http://") or c.startswith("https://"):
             url = c
             break
-    desc = ""
+
     # Grab a long-ish Japanese description field (heuristic: length > 40, not URL)
     for c in row:
         if len(c) > 40 and "http" not in c and all(x not in c for x in ['〒']):
             desc = c.replace('"', '').strip()
             break
+
     parks.append({
         "name": name,
         "address": address,
