@@ -30,6 +30,10 @@
   ,"distanceUnitMeters": "m"
   ,"distanceUnitKilometers": "km"
   ,"popupDistanceSeparator": ""
+  ,"favoritesShowAll": "すべて表示"
+  ,"favoritesShowOnly": "お気に入りのみ"
+  ,"favoritesLabel": "お気に入り"
+  ,"quickDistancesLabel": "距離プリセット"
   },
   "en": {
     "pageTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
@@ -62,5 +66,9 @@
   ,"distanceUnitMeters": "m"
   ,"distanceUnitKilometers": "km"
   ,"popupDistanceSeparator": ""
+  ,"favoritesShowAll": "Show All"
+  ,"favoritesShowOnly": "Favorites Only"
+  ,"favoritesLabel": "Favorites"
+  ,"quickDistancesLabel": "Quick Distances"
   }
 }

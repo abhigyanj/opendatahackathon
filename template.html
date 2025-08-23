@@ -194,6 +194,14 @@
         <input id="distRange" type="range" min="0" max="20000" step="500" value="0" style="flex:1;">
         <span id="distValue" style="font-size:11px;color:#333;min-width:52px;text-align:right;" data-i18n="distanceAll">すべて</span>
       </div>
+      <div id="quickDistances" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+        <button class="qd-btn tiny-btn" data-dist="500">500m</button>
+        <button class="qd-btn tiny-btn" data-dist="1000">1km</button>
+        <button class="qd-btn tiny-btn" data-dist="2000">2km</button>
+        <button class="qd-btn tiny-btn" data-dist="5000">5km</button>
+        <button class="qd-btn tiny-btn" data-dist="0" data-i18n="distanceAll">すべて</button>
+        <button id="favToggle" class="tiny-btn" type="button" data-mode="all" style="margin-left:auto;">★ <span data-i18n="favoritesShowOnly">お気に入りのみ</span></button>
+      </div>
       <div class="section-label">
         <h3><span data-i18n="categoriesLabel">カテゴリー</span> <small id="catCount" class="muted"></small></h3>
         <button id="catSelectAll" class="tiny-btn" type="button" aria-pressed="true" data-i18n-dynamic="selectAll">全解除</button>
@@ -241,6 +249,8 @@
   let sortMode = 'name';
   // Added distance filter state
   let maxDistance = 0; // meters (0 = unlimited)
+  let favorites = new Set(JSON.parse(localStorage.getItem('favorites')||'[]'));
+  let showFavoritesOnly = false;
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
     const catBox = document.getElementById('catBox');
@@ -365,17 +375,45 @@
     populateCluster(parks);
 
     function focusPark(p){
-  leafletMap.flyTo([p.lat, p.lon], 15, {animate:true, duration:0.75});
-  const entry = markers.find(e=>e.parkIdx===p._idx);
-  if(entry) setTimeout(()=>entry.marker.openPopup(), 450);
-    }
+      const entry = markers.find(e=>e.parkIdx===p._idx);
+      if(!entry) return;
+      const marker = entry.marker;
+      // Use cluster API to ensure marker is visible (expanded) before opening popup
+      if(clusterGroup && typeof clusterGroup.zoomToShowLayer === 'function'){
+        clusterGroup.zoomToShowLayer(marker, ()=>{
+          leafletMap.flyTo(marker.getLatLng(), Math.max(leafletMap.getZoom(), 15), {animate:true, duration:0.6});
+          marker.openPopup();
+        });
+      } else {
+        leafletMap.flyTo(marker.getLatLng(), 15, {animate:true, duration:0.75});
+        setTimeout(()=>marker.openPopup(), 450);
+      }
+     }
     function render(list){
       listEl.innerHTML = "";
       list.slice(0,300).forEach((p, idx)=>{
         const d = document.createElement('div');
+        d.classList.add('park-row');
         const nameSpan = document.createElement('span');
         nameSpan.textContent = p.name;
         d.appendChild(nameSpan);
+        // Favorite star
+        const star = document.createElement('button');
+        star.type='button';
+        star.className='fav-star';
+        star.setAttribute('aria-label','favorite');
+        star.textContent = favorites.has(p._idx)?'★':'☆';
+        star.style.marginLeft='8px';
+        star.onclick = (e)=>{
+          e.stopPropagation();
+            if(favorites.has(p._idx)) favorites.delete(p._idx); else favorites.add(p._idx);
+            localStorage.setItem('favorites', JSON.stringify([...favorites]));
+            star.textContent = favorites.has(p._idx)?'★':'☆';
+            if(showFavoritesOnly && !favorites.has(p._idx)){
+              d.remove();
+            }
+        };
+        d.appendChild(star);
         if(typeof p.dist === 'number' && userLocation){
           const distSpan = document.createElement('span');
           distSpan.style.fontSize='11px';
@@ -423,6 +461,9 @@
         });
       } else if(sortMode==='name') {
         filtered = [...filtered].sort((a,b)=> a.name.localeCompare(b.name, 'ja'));
+      }
+      if(showFavoritesOnly){
+        filtered = filtered.filter(p=> favorites.has(p._idx));
       }
       render(filtered);
       populateCluster(filtered);
@@ -535,24 +576,18 @@
   function applyTranslations(){
     document.documentElement.lang = currentLang;
     document.querySelectorAll('[data-i18n]').forEach(el=>{
-       const k = el.getAttribute('data-i18n');
-       const txt = tr(k);
-       if(txt) el.textContent = txt;
-     });
-     // Reset distance value label when unlimited (after translation swap)
-     if(maxDistance===0){
-       const dv=document.getElementById('distValue');
-       if(dv) dv.textContent = tr('distanceAll');
-     }
-    // Update dynamic popup texts (re-opened later) & distance slider units label if needed
-    updatePopupsWithDirections();
-    const unitM = tr('distanceUnitMeters');
-    const unitKm = tr('distanceUnitKilometers');
-    document.querySelectorAll('#distValue').forEach(el=>{
-      if(maxDistance===0) el.textContent = tr('distanceAll');
-      else if(maxDistance < 1000) el.textContent = maxDistance + ' ' + unitM;
-      else el.textContent = (maxDistance/1000).toFixed(maxDistance%1000===0?0:1) + ' ' + unitKm;
+      const k = el.getAttribute('data-i18n');
+      const txt = tr(k);
+      if(txt) el.textContent = txt;
     });
+    // Reset distance value label when unlimited (after translation swap)
+    if(maxDistance===0){
+      const dv=document.getElementById('distValue');
+      if(dv) dv.textContent = tr('distanceAll');
+    }
+    // Update favorites toggle label
+    const favSpan = document.querySelector('#favToggle span[data-i18n]');
+    if(favSpan){ favSpan.textContent = tr(showFavoritesOnly? 'favoritesShowAll':'favoritesShowOnly'); }
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
       const k = el.getAttribute('data-i18n-placeholder');
       const txt = tr(k);
@@ -680,19 +715,35 @@
       if(v===0){
         distValue.textContent = tr('distanceAll');
       } else if(v < 1000){
-        distValue.textContent = v + ' m';
+        distValue.textContent = v + ' ' + tr('distanceUnitMeters');
       } else {
-        distValue.textContent = (v/1000).toFixed(v%1000===0?0:1) + ' km';
+        distValue.textContent = (v/1000).toFixed(v%1000===0?0:1) + ' ' + tr('distanceUnitKilometers');
       }
       if(!userLocation && v>0){ requestLocation(); } else { applyFilters(); }
     });
   }
-  function toggleSortButtons(){
-    document.querySelectorAll('#sortNameBtn,#sortDistBtn').forEach(btn=>{
-      const active = btn.dataset.sort===sortMode;
-      btn.classList.toggle('active', active);
+  // Quick distance chips
+  document.querySelectorAll('.qd-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const dist = parseInt(btn.dataset.dist,10);
+      maxDistance = dist;
+      if(distRange) distRange.value = dist;
+      if(dist===0){ distValue.textContent = tr('distanceAll'); }
+      else if(dist<1000){ distValue.textContent = dist + ' ' + tr('distanceUnitMeters'); }
+      else distValue.textContent = (dist/1000).toFixed(dist%1000===0?0:1) + ' ' + tr('distanceUnitKilometers');
+      if(dist>0 && !userLocation) requestLocation(); else applyFilters();
+      document.querySelectorAll('.qd-btn').forEach(b=> b.classList.toggle('active', b===btn));
     });
-  }
+  });
+  // Favorites toggle
+  const favToggle = document.getElementById('favToggle');
+  favToggle.addEventListener('click', ()=>{
+    showFavoritesOnly = !showFavoritesOnly;
+    favToggle.dataset.mode = showFavoritesOnly? 'fav':'all';
+    const span = favToggle.querySelector('span[data-i18n]');
+    if(span){ span.setAttribute('data-i18n', showFavoritesOnly? 'favoritesShowAll':'favoritesShowOnly'); span.textContent = tr(showFavoritesOnly? 'favoritesShowAll':'favoritesShowOnly'); }
+    applyFilters();
+  });
   // Optional: try auto locate after short delay (can be removed if undesired)
   setTimeout(()=>{ /* requestLocation(); */ }, 2500);
 
@@ -700,6 +751,8 @@
   (function(){
     const style=document.createElement('style');
     style.textContent += `.tiny-btn.active{background:#1cb5e0 !important; color:#fff !important; border-color:#1699bd !important;}`;
+    style.textContent += `.qd-btn.active{background:#1cb5e0;color:#fff;border-color:#1699bd;}`;
+    style.textContent += `.fav-star{background:transparent;border:none;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;color:#e0b800;} .fav-star:hover{transform:scale(1.15);} .fav-star:focus{outline:2px solid #1cb5e0;outline-offset:2px;}`;
     document.head.appendChild(style);
   })();
 
