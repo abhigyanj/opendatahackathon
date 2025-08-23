@@ -20,7 +20,7 @@ lines = [x.split(",") for x in lines]
 # Build structured park list (name, address, lat, lon, desc/url if present)
 parks = []
 for row in lines:
-    if len(row) < 20:
+    if len(row) < 53:
         continue
 
     # Extract all row-derived variables at the top
@@ -31,8 +31,6 @@ for row in lines:
     url = row[52].strip()
     desc = row[34].strip()
 
-    print(row[34])
-
     if not lat_raw or not lon_raw:
         continue
     try:
@@ -40,24 +38,6 @@ for row in lines:
         lon = float(lon_raw)
     except ValueError:
         continue
-
-    # Fix obviously swapped coordinates (latitude should be between -90..90)
-    if abs(lat) > 90 and abs(lon) <= 90:
-        lat, lon = lon, lat
-    if abs(lat) > 90 or abs(lon) > 180:
-        continue
-
-    # # Try to find a URL in the row
-    # for c in row:
-    #     if c.startswith("http://") or c.startswith("https://"):
-    #         url = c
-    #         break
-
-    # Grab a long-ish Japanese description field (heuristic: length > 40, not URL)
-    # for c in row:
-    #     if len(c) > 40 and "http" not in c and all(x not in c for x in ['〒']):
-    #         desc = c.replace('"', '').strip()
-    #         break
 
     parks.append({
         "name": name,
