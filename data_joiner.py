@@ -29,13 +29,13 @@ except ImportError:
 # Target fields (description removed)
 TARGET_FIELDS = ["name", "address", "url", "latitude", "longitude"]
 
-DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR = Path(__file__).parent / "data2"
 OUTPUT_FILE = Path(__file__).parent / "public_facilities_merged.csv"
 
 # Heuristic patterns for auto-detection (case-insensitive)
 FIELD_PATTERNS: Dict[str, List[str]] = {
         "name": [r"^名称$"],
-        "address": [r"^住所$"],
+        "address": [r"^(住所|所在地_連結表記)$"],
         "url": [r"^URL$"],
         "latitude": [r"^緯度$"],
         "longitude": [r"^経度$"],

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title data-i18n="pageTitle">Tokyo Parks Map | 都立公園マップ</title>
+  <title data-i18n="pageTitle">東京公共施設マップ</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -170,10 +170,12 @@
 <body>
   <header>
     <div style="display:flex;justify-content:center;align-items:center;gap:16px;flex-wrap:wrap;">
-      <h1 data-i18n="headerTitle">Tokyo Parks Map | 都立公園マップ</h1>
+  <h1 data-i18n="headerTitle">東京公共施設マップ</h1>
       <div style="display:flex;gap:6px;align-items:center;">
         <button id="lang-ja" class="lang-btn" data-lang="ja" aria-pressed="true">日本語</button>
         <button id="lang-en" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+  <button id="lang-ko" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+  <button id="lang-zh" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
       </div>
     </div>
     <p data-i18n="subtitle">Discover, search, and explore Tokyo's public parks on an interactive map.</p>
@@ -765,6 +767,8 @@
         const span = locBtn.querySelector('[data-i18n="useLocationLabel"], [data-i18n="locationSetLabel"]');
         if(span){ span.setAttribute('data-i18n','locationSetLabel'); span.textContent = tr('locationSetLabel'); }
       }
+  const statusEl = document.getElementById('locStatus');
+  if(statusEl) statusEl.textContent='';
       return;
     }
     const statusEl = document.getElementById('locStatus');
@@ -776,7 +780,8 @@
     navigator.geolocation.getCurrentPosition(pos=>{
       const {latitude, longitude, accuracy} = pos.coords;
       userLocation = {lat: latitude, lon: longitude, accuracy};
-      statusEl.textContent = currentLang==='ja'? '取得済' : 'Location set';
+  // Clear status (no persistent success text needed; button color indicates state)
+  statusEl.textContent = '';
       showUserLocation();
       updateDistances();
       applyFilters();
