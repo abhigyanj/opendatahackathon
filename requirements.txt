@@ -1,1 +1,9 @@
 pandas
+flask
+python-pptx
+python-docx
+fusepy # (not required for browser Fuse.js but kept if local fuzzy needed)
+requests
+beautifulsoup4 # potential future scraping / enrichment
+numpy
+gunicorn
