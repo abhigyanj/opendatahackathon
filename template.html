@@ -182,7 +182,10 @@
   </header>
   <div class="container">
     <div id="panel">
-      <strong data-i18n="searchHeading">公園を検索</strong><br>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+        <strong data-i18n="searchHeading">公園を検索</strong>
+        <span id="resultCount" style="font-size:12px;color:#555;"></span>
+      </div><br>
       <input id="q" placeholder="公園名で検索..." data-i18n-placeholder="searchPlaceholder">
       <div id="locControls" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
         <button id="locBtn" type="button" class="tiny-btn" style="display:inline-flex;align-items:center;gap:4px;">📍 <span data-i18n="useLocationLabel">現在地</span></button>
@@ -401,6 +404,10 @@
      }
     function render(list){
       listEl.innerHTML = "";
+      const rc = document.getElementById('resultCount');
+      if(rc){
+        rc.textContent = `${list.length}`;
+      }
       list.slice(0,300).forEach((p, idx)=>{
         const d = document.createElement('div');
         d.classList.add('park-row');
