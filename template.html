@@ -25,6 +25,7 @@
     #panel button.tiny-btn.partial { background:#fff4d3; border-color:#f0c662; }
     #panel button.tiny-btn.clear { background:#ffe3e3; border-color:#ffb2b2; }
     #panel button.tiny-btn.clear:hover { background:#ffd4d4; }
+  #quickDistances .tiny-btn, #quickDistances .qd-btn { flex:0 0 auto; white-space:nowrap; }
     .cat-item { display:flex; align-items:flex-start; gap:6px; cursor:pointer; position:relative; font-size:12.5px; line-height:1.25; padding:4px 2px 4px 0; }
     .cat-item input.catChk { position:absolute; opacity:0; inset:0; cursor:pointer; }
     .cat-item .fake-box { width:18px; height:18px; border:2px solid #4f8ef7; border-radius:5px; display:flex; align-items:center; justify-content:center; background:#4f8ef7; flex:0 0 18px; box-sizing:border-box; position:relative; }
@@ -88,7 +89,7 @@
         <input id="distRange" type="range" min="0" max="20000" step="500" value="0" style="flex:1;">
         <span id="distValue" style="font-size:11px;color:#333;min-width:52px;text-align:right;" data-i18n="distanceAll">すべて</span>
       </div>
-      <div id="quickDistances" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+  <div id="quickDistances" style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin;">
         <button class="qd-btn tiny-btn" data-dist="500">500m</button>
         <button class="qd-btn tiny-btn" data-dist="1000">1km</button>
         <button class="qd-btn tiny-btn" data-dist="2000">2km</button>
@@ -110,11 +111,11 @@
         <button type="button" class="about-toggle" id="aboutToggle">−</button>
       <h2 data-i18n="aboutHeading">About This Website</h2>
       <p data-i18n="aboutParagraph1">
-        Tokyo Parks Map is an open-data web application that helps you discover and explore public parks across Tokyo.
+        Tokyo Public Facilities Map is an open-data web application that helps you discover and explore public parks across Tokyo.
       </p>
       <ul>
-        <li data-i18n="bullet1">Search for parks by name in Japanese</li>
-        <li data-i18n="bullet2">Click on a park to zoom to its location on the map</li>
+        <li data-i18n="bullet1">Search for public facilities by name in Japanese</li>
+        <li data-i18n="bullet2">Click on a public facilities to zoom to its location on the map</li>
         <li data-i18n="bullet3">View park details, addresses, and links (where available)</li>
         <li data-i18n="bullet4">Data sourced from Tokyo's open government datasets</li>
         <li data-i18n="bullet5">Built with Python, Flask, and Folium/Leaflet.js</li>
@@ -184,7 +185,10 @@
     const selectAllBtn = document.getElementById('catSelectAll');
   const categories = [...new Set(publicFacilities.map(p=>p.category).filter(Boolean))].sort();
     
-    function cssSafe(s){return s.replace(/[^a-zA-Z0-9_-]/g,'_');}
+    // Create a stable, UNIQUE, CSS-safe token per category (Japanese chars were collapsing to underscores)
+    function cssSafe(s){
+      return 'c' + Array.from(s).map(ch=>ch.charCodeAt(0).toString(16)).join('-');
+    }
     
     function buildCategoryFilters(){
       catBox.innerHTML = categories.map(cat=>{
@@ -260,7 +264,7 @@
     leafletMap.addLayer(clusterGroup);
     const markers = []; // {marker, parkIdx, cat}
     function pickIcon(category){
-      if(!category) return '🌳';
+      if(!category) return '他';
       const lc = category.toLowerCase(); // Japanese unaffected
       // Specific Japanese / category mappings
       if(/ごみ|ゴミ|廃棄|水道|給水/.test(lc)) return '🚮';              // ごみ・水道施設
@@ -269,7 +273,7 @@
       if(/スポーツ|体育|sport|gym/.test(lc)) return '⚾️';                // スポーツ・体育館
       if(/交通|駅|station|rail|train/.test(lc)) return '🚉';             // 交通・駅
       if(/保育|幼稚園|託児|nursery|kindergarten/.test(lc)) return '🧸';  // 保育・幼稚園
-      if(/公園|park/.test(lc)) return '🛝';                              // 公園
+      if(/公園|park/.test(lc)) return '🌳';                              // 公園
       if(/図書|ライブラリ|library/.test(lc)) return '📚';                // 図書館
       if(/学校|教育|school|college|university/.test(lc)) return '🏫';    // 学校・教育施設
       if(/市役所|役場|区役所|government|city hall/.test(lc)) return '🏛️'; // 市役所・役場
@@ -277,6 +281,7 @@
       if(/病院|医療|hospital|clinic|medical/.test(lc)) return '🏥';      // 病院・医療
       if(/福祉|welfare/.test(lc)) return '🤝🏻';                           // 福祉施設
       if(/高齢|老人|senior|elder/.test(lc)) return '👵🏻';                 // 高齢者施設
+    if (/住区施設/.test(lc)) return '🏠';               
       return '他';
     }
     function buildAllMarkers(){
@@ -516,6 +521,7 @@
     
   function buildLegend(sample){
       const legend = document.createElement('div');
+      legend.setAttribute('data-legend','1');
       legend.style.position='absolute';
       legend.style.bottom='8px';
       legend.style.right='8px';
@@ -628,7 +634,7 @@
           b.setAttribute('aria-pressed', b===btn ? 'true':'false');
         });
         // Rebuild legend for translated title
-        document.querySelectorAll('.map-wrap > div').forEach(div=>{ if(div.innerHTML && div.innerHTML.includes('var(--cat-')){ div.remove(); }});
+        document.querySelectorAll('.map-wrap > div[data-legend="1"]').forEach(div=> div.remove());
         buildLegend(categoryColors);
         applyTranslations();
         // Rebuild popups with translated labels
