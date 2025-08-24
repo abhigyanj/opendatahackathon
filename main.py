@@ -20,10 +20,10 @@ lines = [x.split(",") for x in lines]
 
 
 # Build structured park list (name, address, lat, lon, desc/url if present)
-parks = []
+public_facilities = []
 raw_categories = []
-for row in lines:
 
+for row in lines:
     # Extract all row-derived variables at the top
     name = row[0].strip()
     address = row[1].strip()
@@ -43,7 +43,7 @@ for row in lines:
         continue
 
     raw_categories.append(category)
-    parks.append({
+    public_facilities.append({
         "name": name,
         "address": address,
         "lat": lat,
@@ -71,7 +71,7 @@ color_name_to_hex = {
 }
 
 # Attach color to each park and compute hex fallback
-for p in parks:
+for p in public_facilities:
     name_color = category_colors.get(p.get("category"), "blue")
     p["color"] = name_color
     p["hex_color"] = color_name_to_hex.get(name_color, name_color)
@@ -98,7 +98,7 @@ def index():
     # Provide hex color mapping for template
     category_colors_hex = {cat: color_name_to_hex.get(col, col) for cat, col in category_colors.items()}
     payload = {
-        "parks": parks,
+        "publicFacilities": public_facilities,
         "centerLat": center_lat,
         "centerLon": center_lon,
         "categoryColors": category_colors_hex
@@ -109,9 +109,9 @@ def index():
     templ = templ.replace('I18N_JSON_PLACEHOLDER', i18n_payload)
     return render_template_string(templ)
 
-@app.route("/api/parks")
-def api_parks():
-    return jsonify(parks)
+@app.route("/api/facilities")
+def api_facilities():
+    return jsonify(public_facilities)
 
 if __name__ == "__main__":
     app.run(debug=True)

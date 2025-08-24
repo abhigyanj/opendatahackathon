@@ -1,14 +1,15 @@
 {
   "ja": {
-    "pageTitle": "Tokyo Parks Map | 都立公園マップ",
-    "headerTitle": "Tokyo Parks Map | 都立公園マップ",
-    "subtitle": "東京の公園を検索・発見できるインタラクティブマップ",
-    "searchHeading": "公園を検索",
-    "searchPlaceholder": "公園名で検索...",
+  "pageTitle": "Tokyo Public Facilities Map | 東京公共施設マップ",
+  "headerTitle": "Tokyo Public Facilities Map | 東京公共施設マップ",
+  "subtitle": "東京の公共施設を検索・発見できるインタラクティブマップ",
+  "searchHeading": "公共施設を検索",
+  "searchPlaceholder": "施設名で検索...",
     "categoriesLabel": "カテゴリー",
     "useLocationLabel": "現在地",
+  "locationSetLabel": "位置取得済",
   "distanceFilterLabel": "距離フィルタ",
-  "distanceAll": "すべて",
+"distanceAll": "すべて",
     "photoLoading": "写真を読み込み中...",
     "photoNone": "近くの写真が見つかりません",
     "selectAll_allSelected": "全解除",
@@ -16,13 +17,13 @@
     "selectAll_partial": "一部",
     "legendTitle": "カテゴリー",
     "aboutHeading": "このサイトについて",
-    "aboutParagraph1": "Tokyo Parks Map は東京都内の公園オープンデータを活用し、公園の場所や情報を探しやすくしたウェブアプリです。名前で検索したり、地図上で位置を確認したり、基本的な詳細を見ることができます。",
-    "bullet1": "日本語の名称で公園を検索",
-    "bullet2": "公園をクリックするとその位置へズーム",
-    "bullet3": "住所やリンク（あれば）を確認",
+    "aboutParagraph1": "Tokyo Public Facilities Map は東京都内の公共施設に関するオープンデータを活用し、公共施設の場所や情報を探しやすくしたウェブアプリです。名前で検索したり、地図上で位置を確認したり、基本的な詳細を見ることができます。",
+  "bullet1": "日本語の名称で公共施設を検索",
+  "bullet2": "施設をクリックするとその位置へズーム",
+  "bullet3": "住所やリンク（あれば）を確認",
     "bullet4": "東京都オープンデータを利用",
     "bullet5": "Python / Flask / Leaflet.js で構築",
-    "footer": "© 2025 Tokyo Parks Map | オープンデータハッカソン"
+  "footer": "© 2025 Tokyo Public Facilities Map | オープンデータハッカソン"
   ,"sortNameLabel": "A-Z"
   ,"sortDistanceLabel": "距離"
   ,"linkLabel": "リンク"
@@ -36,13 +37,14 @@
   ,"quickDistancesLabel": "距離プリセット"
   },
   "en": {
-    "pageTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
-    "headerTitle": "Tokyo Parks Map | Metropolitan Park Explorer",
-    "subtitle": "Discover, search, and explore Tokyo's public parks on an interactive map.",
-    "searchHeading": "Search Parks",
-    "searchPlaceholder": "Search by park name...",
+  "pageTitle": "Tokyo Public Facilities Map",
+  "headerTitle": "Tokyo Public Facilities Map",
+  "subtitle": "Discover, search, and explore Tokyo's public facilities on an interactive map.",
+  "searchHeading": "Search Facilities",
+  "searchPlaceholder": "Search by facility name...",
     "categoriesLabel": "Categories",
     "useLocationLabel": "Location",
+  "locationSetLabel": "Location Set",
   "distanceFilterLabel": "Distance Filter",
   "distanceAll": "All",
     "photoLoading": "Loading photo...",
@@ -52,13 +54,13 @@
     "selectAll_partial": "Some",
     "legendTitle": "Categories",
     "aboutHeading": "About This Website",
-    "aboutParagraph1": "Tokyo Parks Map is an open data web application that helps you discover and explore public parks across Tokyo. The interactive map lets you search by name, zoom to locations, and view basic details. Built for the Open Data Hackathon to promote civic use of public datasets.",
-    "bullet1": "Search parks by name (Japanese)",
-    "bullet2": "Click a park to zoom to its location",
+  "aboutParagraph1": "Tokyo Public Facilities Map is an open data web application that helps you discover and explore public facilities across Tokyo. The interactive map lets you search by name, zoom to locations, and view basic details. Built for the Open Data Hackathon to promote civic use of public datasets.",
+  "bullet1": "Search facilities by name (Japanese)",
+  "bullet2": "Click a facility to zoom to its location",
     "bullet3": "View addresses, links (where available)",
-    "bullet4": "Data sourced from Tokyo open government datasets",
-    "bullet5": "Built with Python, Flask & Leaflet.js",
-    "footer": "© 2025 Tokyo Parks Map | Open Data Hackathon"
+  "bullet4": "Data sourced from Tokyo open government datasets",
+  "bullet5": "Built with Python, Flask & Leaflet.js",
+  "footer": "© 2025 Tokyo Public Facilities Map | Open Data Hackathon"
   ,"sortNameLabel": "A-Z"
   ,"sortDistanceLabel": "Distance"
   ,"linkLabel": "Link"
