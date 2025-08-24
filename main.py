@@ -3,7 +3,7 @@ import json
 import urllib.parse
 
 enc = "cp932"
-path = "./new_data2/public_facilities_merged_with_category_revised.csv"
+path = "./new_data/v9.csv"
 
 try:
     with open(path, encoding="utf-8-sig") as f:
